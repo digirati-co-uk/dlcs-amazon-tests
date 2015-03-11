@@ -170,7 +170,7 @@ namespace DownloadMetricsSDK
                         }
                     }
                 }
-                else if (args[0] == "parallel")
+                else if (args[0].StartsWith("parallel"))
                 {
                     List<Action> actions = new List<Action>();
                     foreach (string path in paths)
@@ -192,7 +192,10 @@ namespace DownloadMetricsSDK
 
                     Parallel.Invoke(new ParallelOptions
                     {
-                        MaxDegreeOfParallelism = paths.Count
+                        MaxDegreeOfParallelism =
+                            args[0] == "parallel1" ?
+                                paths.Count :
+                                System.Environment.ProcessorCount
                     }, actions.ToArray());
                 }
                 else if (args[0] == "tasks")

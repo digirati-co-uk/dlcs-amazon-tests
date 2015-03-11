@@ -46,8 +46,10 @@ namespace DownloadMetrics
             Process p = new Process();
             p.StartInfo.UseShellExecute = false;
 
+            string cmd = String.Format("aws s3 cp s3://wdl-s3-tests/{0} s3/", path);
+
             p.StartInfo.FileName = "cmd.exe";
-            p.StartInfo.Arguments = String.Format("/C {0}", path);
+            p.StartInfo.Arguments = String.Format("/C {0}", cmd);
             p.Start();
 
             p.WaitForExit();
@@ -67,6 +69,12 @@ namespace DownloadMetrics
 
             List<string> paths = ReadLines(args[1]).ToList();
 
+            foreach (string filename in Directory.EnumerateFiles("s3", "*.jp2"))
+            {
+                //Console.WriteLine("Removing {0}", filename);
+                File.Delete(filename);
+            }
+
             DateTime startTime = DateTime.Now;
 
             if (args[0] == "serial")
@@ -76,7 +84,7 @@ namespace DownloadMetrics
                     Run(path);
                 }
             }
-            else if (args[0] == "parallel")
+            else if (args[0].StartsWith("parallel"))
             {
                 List<Action> actions = new List<Action>();
                 foreach (string path in paths)
@@ -90,7 +98,10 @@ namespace DownloadMetrics
 
                 Parallel.Invoke(new ParallelOptions
                 {
-                    MaxDegreeOfParallelism = paths.Count
+                    MaxDegreeOfParallelism = 
+                        args[0] == "parallel1" ?
+                            paths.Count :
+                            System.Environment.ProcessorCount
                 }, actions.ToArray());
             }
             else if (args[0] == "tasks")
@@ -109,7 +120,7 @@ namespace DownloadMetrics
                 double avg = _results.Sum() / _results.Count;
                 _results.Add(avg);
                 Console.WriteLine("avg = {0} ms", avg);
-                File.WriteAllText("results.csv", String.Join(",", _results.Select(r => r.ToString())));
+                File.AppendAllText("results.csv", String.Concat(String.Join(",", _results.Select(r => r.ToString())), "\r\n"));
             }
         }
     }
