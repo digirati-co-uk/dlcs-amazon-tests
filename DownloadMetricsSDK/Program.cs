@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -141,17 +142,22 @@ namespace DownloadMetricsSDK
                 File.Delete(filename);
             }
 
+            bool useAmbientClient = Convert.ToBoolean(ConfigurationManager.AppSettings["UseAmbientClient"]);
+
             using (_ambientClient = new AmazonS3Client(Amazon.RegionEndpoint.EUWest1))
             {
-                using (GetObjectResponse response = _ambientClient.GetObject(_bucketName, "hello.txt"))
+                if (useAmbientClient)
                 {
-                    if (File.Exists("hello.txt"))
+                    using (GetObjectResponse response = _ambientClient.GetObject(_bucketName, "hello.txt"))
                     {
-                        File.Delete("hello.txt");
+                        if (File.Exists("hello.txt"))
+                        {
+                            File.Delete("hello.txt");
+                        }
+                        response.WriteResponseStreamToFile("hello.txt");
                     }
-                    response.WriteResponseStreamToFile("hello.txt");
                 }
-                
+
                 List<string> paths = ReadLines(args[1]).ToList();
 
                 DateTime startTime = DateTime.Now;
@@ -160,7 +166,7 @@ namespace DownloadMetricsSDK
                 {
                     foreach (string path in paths)
                     {
-                        if (_ambientClient != null)
+                        if (useAmbientClient)
                         {
                             RunWithAmbient(path);
                         }
@@ -179,13 +185,13 @@ namespace DownloadMetricsSDK
                         actions.Add(
                             () =>
                             {
-                                if (_ambientClient != null)
+                                if (useAmbientClient)
                                 {
-                                    RunWithAmbient(path);
+                                    RunWithAmbient(p);
                                 }
                                 else
                                 {
-                                    Run(path);
+                                    Run(p);
                                 }
                             });
                     }
