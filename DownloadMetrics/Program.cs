@@ -84,6 +84,28 @@ namespace DownloadMetrics
                     Run(path);
                 }
             }
+            else if (args[0] == "staccato")
+            {
+                Random rand = new Random();
+                List<Action> actions = new List<Action>();
+                foreach (string path in paths)
+                {
+                    string p = path;
+                    actions.Add(
+                        () =>
+                        {
+                            int delay = rand.Next(0, paths.Count);
+                            Console.WriteLine("{0} waiting {1} seconds", p, delay);
+                            System.Threading.Thread.Sleep(new TimeSpan(0, 0, delay));
+                            Run(p);
+                        });
+                }
+
+                Parallel.Invoke(new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = paths.Count
+                }, actions.ToArray());
+            }
             else if (args[0].StartsWith("parallel"))
             {
                 List<Action> actions = new List<Action>();
